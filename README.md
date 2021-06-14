@@ -7,7 +7,15 @@ This is a **simple markdown renderer** for Roku apps written in [BrighterScript]
 Parser and renderer support a subset of the markdown spec, and strip all inline styles.
 The goal is to eventually support images between paragraphs.
 
-There is currently no plan to support full text styling.
+There is currently no plan to support full text styling, but might consider tables.
+
+Current support:
+
+- titles, using `# Title` syntax
+- paragraphs
+- code blocks, using triple-tick or indentation
+- quote blocks, using `> That quote`
+- horizontal rules, using 3+ characters of `-=*`
 
 ## Installation
 
@@ -35,9 +43,9 @@ See `demo.bs` in the repository sources for an example of usage.
 <rokumarkdown_Renderer id="markdownView" />
 ```
 
-Optionally you can redefine some/all the fonts:
+You can redefine some/all the fonts and colors/alignments:
 ```xml
-<rokumarkdown_Renderer id="markdownView">
+<rokumarkdown_Renderer id="markdownView" color="#FFFFCC" h1Align="center">
     <Font role="font" uri="pkg:/fonts/Ubuntu_Regular.ttf" size="24" />
     <Font role="h1Font" uri="pkg:/fonts/Ubuntu_Bold.ttf" size="48" />
     <Font role="h2Font" uri="pkg:/fonts/Ubuntu_Bold.ttf" size="36" />
@@ -73,9 +81,15 @@ Full interface:
     <field id="h3Font" type="node" />
     <field id="h3Color" type="string" />
     <field id="h3Align" type="string" />
+    <field id="h4Font" type="node" />
+    <field id="h4Color" type="string" />
+    <field id="h4Align" type="string" />
+    <field id="hrColor" type="string" />
+    <field id="hrSize" type="int" />
     <field id="animatedScrolling" type="boolean" alias="scroller.animatedScrolling" />
     <field id="scrollFraction" type="integer" alias="scroller.scrollFraction" />
     <field id="scrollRatio" type="integer" alias="scroller.scrollRatio" />
+    <field id="overflows" type="boolean" />
     <function name="render" />
 </interface>
 ```
@@ -86,16 +100,23 @@ Full interface:
 - `[top-bottom, right-left]`
 - `[top, right, bottom, left]`
 
-**Colors** and **backgrounds** are a RRGGBB or RRGGBBAA color string, e.g. `"0xFFFFFF33"`
+**Colors** are Roku RRGGBB or RRGGBBAA color string, e.g. `"#FFFFFF33"`
+
+**Backgrounds** are:
+
+- either Roku RRGGBB or RRGGBBAA color string, e.g. `"#FFFFFF33"`,
+- or a custom Roku component; the size is provided through `size` field (`[width, height]`), and the text label is appended as a child (see demo).
 
 **Alignments** are Label horizontal alignement values (`left|center|right`)
 
-Titles after H3 are all rendered as H3.
+Titles after H4 are all rendered as H4.
 
 ### 2. Parse markdown source and render
 
+**Vanilla BrightScript version**
+
 ```vbscript
-parser = new rokumarkdown_Parser()
+parser = rokumarkdown_Parser()
 data = parser.parse(markdownSrc)
 
 view = m.top.findNode("markdownView")
@@ -112,10 +133,31 @@ view.callfunc("render", data, false)
 ' view isn't scrollable anymore
 ```
 
+**BrighterScript version**
+
+```vbscript
+parser = new rokumarkdown_Parser()
+data = parser.parse(markdownSrc)
+
+view = m.top.findNode("markdownView")
+view@.render(data)
+
+' view is scrollable and can be focused
+view.setFocus(true)
+```
+
+If you want an optimised non-interactive clipped render:
+
+```vbscript
+view@.render(data, false)
+' view isn't scrollable anymore
+```
+
 ### 3. Render scrolling decorations
 
 This component will not render a scrollbar:
 
+- `overflows` tells whether the content is bigger than the view,
 - you can observe `scrollFraction` to know the state of the scrolling,
 - you can use `scrollRatio` to know how much of the content is visible VS hidden.
 
